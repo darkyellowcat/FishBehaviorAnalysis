@@ -4,3 +4,6 @@ __pycache__/
 *.egg-info/
 outputs/
 
+# IntelliJ IDEA / JetBrains IDE
+.idea/
+*.iml
