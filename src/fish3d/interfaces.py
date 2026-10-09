@@ -1,7 +1,7 @@
 """S0 contracts for later stages; these protocols perform no image processing."""
 
 from dataclasses import dataclass
-from typing import Iterator, Protocol, Sequence
+from typing import Iterator, Literal, Protocol, Sequence
 
 import numpy as np
 
@@ -13,6 +13,8 @@ class VideoFrame:
     frame_id: int
     timestamp_s: float
     bgr: np.ndarray
+    timestamp_source: Literal["decoder", "fps_fallback"]
+    data_source: Literal["synthetic", "experimental"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,6 +25,15 @@ class ViewFrame:
     image: np.ndarray
     roi_x: int  # offset from ROI-local coordinates to the full frame
     roi_y: int
+
+
+@dataclass(frozen=True, slots=True)
+class ProcessedFrame:
+    frame: VideoFrame
+    undistorted_bgr: np.ndarray
+    median_bgr: np.ndarray
+    full_hsv: np.ndarray
+    views: tuple[ViewFrame, ViewFrame]
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,7 +76,7 @@ class VideoSource(Protocol):
 
 
 class FramePreprocessor(Protocol):
-    def process(self, frame: VideoFrame) -> Sequence[ViewFrame]: ...
+    def process(self, frame: VideoFrame) -> ProcessedFrame: ...
 
 
 class ForegroundSegmenter(Protocol):

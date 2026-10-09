@@ -1,4 +1,4 @@
-"""Command-line entry point for S1 synthetic analysis."""
+"""Command-line entry points for synthetic trajectory and S2 video work."""
 
 import argparse
 from pathlib import Path
@@ -16,7 +16,29 @@ def main() -> None:
     simulate = subparsers.add_parser("simulate", help="generate synthetic S1 outputs")
     simulate.add_argument("--config", type=Path, required=True)
     simulate.add_argument("--output", type=Path, required=True)
+    video_demo = subparsers.add_parser("video-demo", help="generate and preprocess an S2 synthetic video")
+    video_demo.add_argument("--config", type=Path, required=True)
+    video_demo.add_argument("--output", type=Path, required=True)
+    process = subparsers.add_parser("preprocess-video", help="preprocess an existing video")
+    process.add_argument("--input", type=Path, required=True)
+    process.add_argument("--config", type=Path, required=True)
+    process.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+
+    if args.command in ("video-demo", "preprocess-video"):
+        from fish3d.video_config import load_video_config
+        from fish3d.video_io import generate_synthetic_video
+        from fish3d.video_processing import preprocess_video
+
+        if args.command == "video-demo":
+            config = load_video_config(args.config)
+            video_path = args.output / "synthetic_input.avi"
+            generate_synthetic_video(video_path, config)
+        else:
+            video_path = args.input
+        manifest = preprocess_video(video_path, args.config, args.output)
+        print(f"Processed {manifest['frame_count']} {manifest['data_source']} video frames in {args.output.resolve()}")
+        return
 
     config = load_config(args.config)
     points = generate_synthetic_trajectory(config)

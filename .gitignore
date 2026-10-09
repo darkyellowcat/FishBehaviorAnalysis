@@ -1,8 +1,38 @@
-.venv/
+# Local Python environments
+/.venv/
+/venv/
+/env/
+
+# Python caches, build products, and test reports
 __pycache__/
+*.py[cod]
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 *.egg-info/
-outputs/
+/build/
+/dist/
+.coverage
+.coverage.*
+/htmlcov/
+
+# Local editor state and OS files
+/.idea/
+/.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local environment values; share examples explicitly
+.env
+.env.*
+!.env.example
+!.env.template
+
+# Experimental data and generated results
+/data/
+/outputs/
+*.log
 
 # IntelliJ IDEA / JetBrains IDE
 .idea/

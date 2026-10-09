@@ -1,0 +1,22 @@
+# S2 demonstration only. Dimensions and ROI are constructed synthetic values.
+data_source: synthetic
+video:
+  expected_width: 320
+  expected_height: 240
+  fps_fallback: 10.0
+preprocessing:
+  median_kernel: 3
+  calibration_file: null
+rois:
+  mirror: {x: 0, y: 0, width: 128, height: 240}
+  real: {x: 128, y: 0, width: 192, height: 240}
+synthetic_video:
+  frame_count: 12
+  fps: 10.0
+  codec: MJPG
+  fish_axes_px: [12, 5]
+  horizontal_motion_px: 18
+  background_bgr: [30, 30, 30]
+  mirror_fish_bgr: [240, 180, 40]
+  real_fish_bgr: [40, 180, 240]
+

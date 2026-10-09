@@ -1,8 +1,9 @@
 # 鱼类三维行为分析系统
 
 本项目分阶段复现论文的单摄像机与平面镜鱼类行为分析路线。
-当前阶段 S0/S1 仅提供三维轨迹数据合同与合成轨迹的运动分析，
-尚未接入真实视频，也未验证真实三维重建或行为识别准确率。
+当前已完成 S0/S1 的三维轨迹数据合同与合成轨迹运动分析，以及 S2 的视频读取、
+去畸变接口、中值滤波、HSV 转换和双视角分区。尚未接入真实实验视频，
+也未验证真实三维重建或行为识别准确率。
 
 ## 安装
 
@@ -18,15 +19,24 @@ py -3.11 -m venv .venv
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1
 .\.venv\Scripts\python -m fish3d simulate --config configs/default.yaml --output outputs/synthetic_demo
+.\.venv\Scripts\python -m fish3d video-demo --config configs/synthetic_video.yaml --output outputs/synthetic_video_demo
 ```
 
-示例输出为标记 `synthetic` 的 CSV、三维轨迹图、速度图、角速度图和
-`run_manifest.json`。`outputs/` 不提交到 Git。输入配置见 `configs/default.yaml`；
-字段和未来模块接口见 `docs/data_contract.md`。
+第一个示例输出标记 `synthetic` 的轨迹 CSV、三张图和运行记录。第二个示例
+生成带 `SYNTHETIC` 字样的 AVI，并保存逐帧图像、原始 OpenCV HSV 数组、
+双视角 ROI、时间戳表和运行记录。已有视频可用以下入口处理：
+
+```powershell
+.\.venv\Scripts\python -m fish3d preprocess-video --input path\to\video.avi --config configs/synthetic_video.yaml --output outputs/my_run
+```
+
+处理真实视频时须使用另行测定 ROI、尺寸、时间和标定参数的配置文件，并将
+`data_source` 改为 `experimental`。`outputs/` 不提交到 Git。字段与 S2
+文件格式见 `docs/data_contract.md` 和 `docs/video_preprocessing.md`。
 
 ## 开发阶段
 
-S0 工程结构和数据接口；S1 合成轨迹、运动特征与图表；S2 视频预处理；
+S0 工程结构和数据接口；S1 合成轨迹、运动特征与图表；S2 视频预处理（已完成 synthetic 验证）；
 S3 LBAdaptiveSOM；S4 质心与跟踪；S5 双视角匹配和三维重建；
-S6 行为识别；S7 真实实验视频验证。进入 S2 需用户确认。
+S6 行为识别；S7 真实实验视频验证。进入 S3 需用户确认。
 
