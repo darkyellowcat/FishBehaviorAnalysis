@@ -124,3 +124,54 @@
 
 
 - 索引复核：执行 git ls-files -ci --exclude-standard，结果为空；当前索引没有已跟踪但又命中忽略规则的文件。
+
+## 2026-10-09 - Task: 复检忽略规则与暂存区
+
+### What was done
+
+- 发现本机 IDE 的 workspace.xml 被重新暂存，已移出索引并保留本地文件。
+
+### Testing
+
+- 验证 18 个应忽略路径、13 个应保留路径，均符合预期。
+- git ls-files -ci --exclude-standard 和 git ls-files .idea 均无输出；确认本地 workspace.xml 仍存在。
+- Git 差异检查发现若干 S2 文件末尾空行提示，属于格式问题，与本轮忽略规则验证分别记录。
+
+### Notes
+
+- .idea/workspace.xml：撤销重新加入索引的状态，保留本地内容。
+- progress.md：在末尾追加本轮检查及修复记录。
+- 回滚：如需恢复本轮前的暂存状态，执行 git add -f -- .idea/workspace.xml；日志仅移除本轮末尾条目。未执行提交或推送。
+
+## 2026-10-09 - Task: S3 LBAdaptiveSOM 背景建模与前景分割
+
+### What was done
+
+- 按原鱼类论文第 251–252 页实现 HSV 圆柱特征平方距离、扩大空间网格、跨像素邻域 Gaussian 更新、学习/在线阶段阈值和阴影判别；双视角分别维护背景模型。
+- 复用 S2 视频读取、去畸变、中值滤波和 HSV/ROI 接口，输出二值前景掩膜、叠加图、逐帧统计、模型状态与可追溯运行记录；所有示例来源明确为 synthetic。
+- 将论文公式与文字的差异、缺失参数、执行顺序和色相线性更新限制写入方法文档；本轮遵循用户阶段安排，不实现 S4 质心与跟踪。
+
+### Testing
+
+- 开工前执行固定验证脚本：21 passed in 0.45s；改动后执行 `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1`：34 passed in 0.85s，包括 S0/S1/S2 回归与 13 项 S3 测试。
+- 执行 `.\.venv\Scripts\python -m fish3d som-demo --config configs/synthetic_som.yaml --output outputs/synthetic_som_demo`：成功处理 18 帧 synthetic 视频；实测分割处理耗时约 7.29 秒，不据此声称实时性能。
+- 校验 36 行逐视角 CSV、54 张二值掩膜、18 张叠加图、两个模型状态；前 3 帧无前景，其后鱼体中心为前景；全图掩膜与 ROI 原点拼接一致，模型形状/数值及来源元数据正确，视频与配置 SHA-256 匹配。
+- 目视检查第 6 帧全图掩膜与叠加图，两个视角前景位置及 SYNTHETIC 标记正确。
+- 独立执行 `.\.venv\Scripts\python -m fish3d segment-video --input outputs/synthetic_som_demo/synthetic_input.avi --config configs/synthetic_som.yaml --output outputs/synthetic_som_replay`：成功处理 18 帧；两次运行 72 张 PNG 文件逐字节相同，两个模型的数组与元数据相同。
+- 执行 `python -m pip check`（使用项目虚拟环境）：无依赖冲突；`git diff --check` 无输出；`git check-ignore outputs/synthetic_som_demo/background_model_real.npz` 确认结果文件被忽略。
+
+### Notes
+
+- `src/fish3d/lbadaptive_som.py`：新增论文基准 SOM、参数校验、HSV 归一化/距离、阴影判别与模型保存。
+- `src/fish3d/foreground_processing.py`：新增双视角分割及掩膜、叠加图、统计、模型与运行记录导出。
+- `configs/synthetic_som.yaml`：新增明确标记 synthetic 的 S3 配置和参数来源说明。
+- `src/fish3d/video_config.py`：新增默认值为 0 的合成视频背景空帧参数，保持原 S2 默认行为。
+- `src/fish3d/video_io.py`：按配置生成初始无鱼背景帧，保留 synthetic 标记。
+- `src/fish3d/__main__.py`：新增 som-demo 与 segment-video 命令。
+- `tests/test_lbadaptive_som.py`：新增数学、初始化、阈值、阴影、空间邻域、色相、输入校验与合成视频集成测试。
+- `docs/lbadaptive_som.md`：记录算法来源、参数口径、论文矛盾、工程约定、运行方法与限制。
+- `docs/data_contract.md`：更新前景模块实现状态和二值掩膜合同。
+- `README.md`：更新 S3 使用入口、输出与阶段状态。
+- `progress.md`：仅在末尾追加本轮实现与验证记录，保留此前未提交的忽略规则复检记录。
+- 已知限制：没有真实实验视频；首帧含鱼会被纳入初始背景，合成示例的 3 个空帧只用于受控测试；论文原始 HSV 线性更新在色相跨界处有偏差；缺失的学习率、邻域尺度等采用已注明的工程配置，尚待真实视频调参和评价。
+- 回滚：执行 `git restore --source=0de9409 -- README.md docs/data_contract.md src/fish3d/__main__.py src/fish3d/video_config.py src/fish3d/video_io.py`；先执行 `git clean -n -- configs/synthetic_som.yaml docs/lbadaptive_som.md src/fish3d/foreground_processing.py src/fish3d/lbadaptive_som.py tests/test_lbadaptive_som.py` 核对清单，再将 `-n` 改为 `-f` 执行。日志仅移除本轮 S3 末尾条目，保留之前记录；ignored 的本地输出无需删除。未提交或推送。

@@ -33,10 +33,13 @@ class SyntheticVideoConfig:
     background_bgr: tuple[int, int, int]
     mirror_fish_bgr: tuple[int, int, int]
     real_fish_bgr: tuple[int, int, int]
+    background_only_frames: int = 0
 
     def __post_init__(self) -> None:
         if self.frame_count < 2 or not isfinite(self.fps) or self.fps <= 0:
             raise ValueError("synthetic frame_count and fps must be positive")
+        if not 0 <= self.background_only_frames < self.frame_count:
+            raise ValueError("background_only_frames must leave at least one fish frame")
         if len(self.codec) != 4:
             raise ValueError("video codec must be a four-character code")
         if len(self.fish_axes_px) != 2 or min(self.fish_axes_px) <= 0 or self.horizontal_motion_px < 0:
@@ -114,6 +117,7 @@ def load_video_config(path: Path) -> VideoConfig:
             background_bgr=tuple(synthetic["background_bgr"]),
             mirror_fish_bgr=tuple(synthetic["mirror_fish_bgr"]),
             real_fish_bgr=tuple(synthetic["real_fish_bgr"]),
+            background_only_frames=synthetic.get("background_only_frames", 0),
         ),
     )
 

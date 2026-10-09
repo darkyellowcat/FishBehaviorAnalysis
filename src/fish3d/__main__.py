@@ -23,7 +23,28 @@ def main() -> None:
     process.add_argument("--input", type=Path, required=True)
     process.add_argument("--config", type=Path, required=True)
     process.add_argument("--output", type=Path, required=True)
+    som_demo = subparsers.add_parser("som-demo", help="generate and segment a synthetic S3 video")
+    som_demo.add_argument("--config", type=Path, required=True)
+    som_demo.add_argument("--output", type=Path, required=True)
+    segment = subparsers.add_parser("segment-video", help="run LBAdaptiveSOM on an existing video")
+    segment.add_argument("--input", type=Path, required=True)
+    segment.add_argument("--config", type=Path, required=True)
+    segment.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+
+    if args.command in ("som-demo", "segment-video"):
+        from fish3d.foreground_processing import segment_video
+        from fish3d.video_config import load_video_config
+        from fish3d.video_io import generate_synthetic_video
+
+        if args.command == "som-demo":
+            video_path = args.output / "synthetic_input.avi"
+            generate_synthetic_video(video_path, load_video_config(args.config))
+        else:
+            video_path = args.input
+        manifest = segment_video(video_path, args.config, args.output)
+        print(f"Segmented {manifest['frame_count']} {manifest['data_source']} frames with LBAdaptiveSOM in {args.output.resolve()}")
+        return
 
     if args.command in ("video-demo", "preprocess-video"):
         from fish3d.video_config import load_video_config

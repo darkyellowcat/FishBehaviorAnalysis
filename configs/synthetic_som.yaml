@@ -1,0 +1,33 @@
+# Constructed S3 example, not a measured experiment configuration.
+data_source: synthetic
+video:
+  expected_width: 160
+  expected_height: 120
+  fps_fallback: 10.0
+preprocessing:
+  median_kernel: 3
+  calibration_file: null
+rois:
+  mirror: {x: 0, y: 0, width: 64, height: 120}
+  real: {x: 64, y: 0, width: 96, height: 120}
+synthetic_video:
+  frame_count: 18
+  fps: 10.0
+  codec: MJPG
+  background_only_frames: 3
+  fish_axes_px: [8, 4]
+  horizontal_motion_px: 12
+  background_bgr: [30, 30, 30]
+  mirror_fish_bgr: [240, 180, 40]
+  real_fish_bgr: [40, 180, 240]
+som:
+  mapping_size: 3
+  learning_frames: 3
+  epsilon_learning: 0.1
+  epsilon_online: 0.01
+  learning_rate: 0.05
+  gaussian_sigma: 1.0
+  shadow_gamma: 0.7
+  shadow_beta: 1.0
+  shadow_saturation_tolerance: 0.1
+  shadow_hue_tolerance_deg: 10.0
