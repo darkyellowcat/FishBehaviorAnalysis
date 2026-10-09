@@ -1,0 +1,12 @@
+# All coordinates in this example are constructed synthetic values.
+synthetic:
+  fish_id: synthetic_fish_001
+  sample_count: 121
+  sample_interval_s: 0.1
+  radius: 10.0
+  angular_rate_rad_s: 0.5
+  vertical_speed: 0.2
+  min_direction_displacement: 1.0e-9
+  coordinate_unit: synthetic_unit
+  coordinate_frame: synthetic_cartesian
+
