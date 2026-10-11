@@ -73,7 +73,7 @@ def generate_synthetic_video(path: Path, config: VideoConfig) -> None:
             image = np.empty((config.expected_height, config.expected_width, 3), dtype=np.uint8)
             image[:] = synthetic.background_bgr
             offset = round(synthetic.horizontal_motion_px * sin(2 * pi * frame_id / synthetic.frame_count))
-            if frame_id >= synthetic.background_only_frames:
+            if frame_id >= synthetic.background_only_frames and frame_id not in synthetic.missing_frame_ids:
                 cv2.ellipse(image, _fish_center(config.mirror_roi, -offset), synthetic.fish_axes_px, 0, 0, 360, synthetic.mirror_fish_bgr, -1)
                 cv2.ellipse(image, _fish_center(config.real_roi, offset), synthetic.fish_axes_px, 0, 0, 360, synthetic.real_fish_bgr, -1)
             cv2.putText(image, "SYNTHETIC", (8, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 1, cv2.LINE_AA)

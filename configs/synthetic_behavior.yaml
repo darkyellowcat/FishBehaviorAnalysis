@@ -1,0 +1,28 @@
+# S6 software fixture only; these thresholds are not real experimental values.
+behavior:
+  data_source: synthetic
+  coordinate_unit: synthetic_unit
+  coordinate_frame: synthetic_cartesian
+  water_surface_z: 10.0
+  surface_tolerance: 0.1
+  floating_duration_s: 15.0
+  frantic_speed: 5.0
+  frantic_angular_speed_rad_s: 1.7
+  max_gap_s: 1.5
+  min_direction_displacement: 0.001
+synthetic_behavior:
+  fish_id: synthetic_fish_01
+  sample_interval_s: 1.0
+  phases:
+    - sample_count: 10
+      start_xyz: [0, 0, 4]
+      velocity_xyz: [1, 0, 0]
+    - sample_count: 10
+      start_xyz: [10, 0, 4]
+      velocity_xyz: [8, 0, 0]
+    - sample_count: 25
+      start_xyz: [82, 0, 10]
+      velocity_xyz: [0, 0, 0]
+    - sample_count: 6
+      start_xyz: [82, 0, 12]
+      velocity_xyz: [0, 0, 0]

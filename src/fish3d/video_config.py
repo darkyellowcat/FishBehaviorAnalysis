@@ -34,12 +34,17 @@ class SyntheticVideoConfig:
     mirror_fish_bgr: tuple[int, int, int]
     real_fish_bgr: tuple[int, int, int]
     background_only_frames: int = 0
+    missing_frame_ids: tuple[int, ...] = ()
 
     def __post_init__(self) -> None:
         if self.frame_count < 2 or not isfinite(self.fps) or self.fps <= 0:
             raise ValueError("synthetic frame_count and fps must be positive")
         if not 0 <= self.background_only_frames < self.frame_count:
             raise ValueError("background_only_frames must leave at least one fish frame")
+        if any(not isinstance(frame, int) or frame < self.background_only_frames or frame >= self.frame_count for frame in self.missing_frame_ids):
+            raise ValueError("missing_frame_ids must be fish-phase frame indices within the video")
+        if len(set(self.missing_frame_ids)) != len(self.missing_frame_ids):
+            raise ValueError("missing_frame_ids must not contain duplicates")
         if len(self.codec) != 4:
             raise ValueError("video codec must be a four-character code")
         if len(self.fish_axes_px) != 2 or min(self.fish_axes_px) <= 0 or self.horizontal_motion_px < 0:
@@ -118,6 +123,7 @@ def load_video_config(path: Path) -> VideoConfig:
             mirror_fish_bgr=tuple(synthetic["mirror_fish_bgr"]),
             real_fish_bgr=tuple(synthetic["real_fish_bgr"]),
             background_only_frames=synthetic.get("background_only_frames", 0),
+            missing_frame_ids=tuple(synthetic.get("missing_frame_ids", ())),
         ),
     )
 

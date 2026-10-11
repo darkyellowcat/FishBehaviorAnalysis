@@ -1,0 +1,12 @@
+# S5 synthetic video replay only. Heights/speeds are ideal-model units, not mm.
+behavior:
+  data_source: synthetic
+  coordinate_unit: model_px
+  coordinate_frame: paper_ideal_cartesian
+  water_surface_z: 32.0
+  surface_tolerance: 1.0
+  floating_duration_s: 15.0
+  frantic_speed: 45.0
+  frantic_angular_speed_rad_s: 1.7
+  max_gap_s: 0.25
+  min_direction_displacement: 0.1
