@@ -1,0 +1,65 @@
+# Five-fish software fixture only; the real view is intentionally on the left.
+data_source: synthetic
+video:
+  expected_width: 160
+  expected_height: 120
+  fps_fallback: 10.0
+preprocessing:
+  median_kernel: 3
+  calibration_file: null
+rois:
+  real: {x: 0, y: 0, width: 96, height: 120}
+  mirror: {x: 96, y: 0, width: 64, height: 120}
+som:
+  mapping_size: 3
+  learning_frames: 3
+  epsilon_learning: 0.1
+  epsilon_online: 0.01
+  learning_rate: 0.05
+  gaussian_sigma: 1.0
+  shadow_gamma: 0.7
+  shadow_beta: 1.0
+  shadow_saturation_tolerance: 0.1
+  shadow_hue_tolerance_deg: 10.0
+centroid:
+  min_area_px: 10
+  max_area_px: 100
+  opening_kernel: 0
+  closing_kernel: 0
+  connectivity: 8
+multi_tracking:
+  expected_fish_count: 5
+  max_speed_px_s: 40.0
+  max_gap_s: 0.5
+  max_prediction_error_px: 10.0
+  merge_radius_px: 10.0
+  merge_area_ratio: 1.6
+multi_processing:
+  view: real
+  processing_scale: 1.0
+  max_frames: 20
+  roi_status: synthetic_fixture
+synthetic_multi_video:
+  frame_count: 20
+  fps: 10.0
+  codec: MJPG
+  background_only_frames: 3
+  fish_axes_px: [4, 2]
+  background_bgr: [30, 30, 30]
+  fish_bgr: [40, 180, 240]
+  fish:
+    - start_px: [20, 14]
+      velocity_px_s: [8, 0]
+      missing_frame_ids: []
+    - start_px: [65, 36]
+      velocity_px_s: [-8, 0]
+      missing_frame_ids: []
+    - start_px: [35, 58]
+      velocity_px_s: [6, 0]
+      missing_frame_ids: [8, 9]
+    - start_px: [65, 80]
+      velocity_px_s: [-6, 0]
+      missing_frame_ids: []
+    - start_px: [25, 102]
+      velocity_px_s: [6, 0]
+      missing_frame_ids: []

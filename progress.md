@@ -287,3 +287,123 @@
 - `outputs/s6_rollback_before/`：上述四个共享文件的开工前副本与哈希，仅本地 ignored 资料；示例与派生结果也在 ignored 的 outputs 中。原始资料、已有新论文和 S4/S5 专有文件保持原样。
 - 已知限制：尚无真实视频/人工标签，规则阈值没有实验校准，不能报告识别准确率；S5 model_px 仍非物理高度/速度。输入保持单鱼每帧一行；无轨迹插值、噪声平滑或实验几何纠正；仅质心高度的跳出/漂浮条件不能证明鱼体整体越过水面或生物学异常。事件记录为观测区间，不外推真实起止，角速度口径须在真实阈值确定前统一。
 - 精确回滚 S6 并保留 S4/S5：在仓库根目录执行 `$s6RollbackRoot = (Resolve-Path '.\outputs\s6_rollback_before').Path; @('README.md','docs/data_contract.md','src/fish3d/__main__.py','progress.md') | ForEach-Object { Copy-Item -LiteralPath (Join-Path $s6RollbackRoot $_) -Destination $_ -Force }`；先执行 `git clean -n -- configs/synthetic_behavior.yaml configs/synthetic_behavior_model.yaml docs/behavior_analysis.md src/fish3d/behavior.py src/fish3d/behavior_processing.py src/fish3d/behavior_visualization.py tests/test_behavior_s6.py` 核对，再将 `-n` 改为 `-f` 执行。本轮未提交或推送，不恢复到 S3 提交覆盖 S4/S5。
+
+## 2026-10-13 - Task: 确认五鱼实验方向并建立多目标二维检测与跟踪预览
+
+### What was done
+
+- 按用户修正确定最终多鱼需求、实际群体数量 5 及左实体/右镜像；将该视频的实体 ROI 放在左侧，矩形边界由抽帧初步估计并明确标记待确认，不使用论文的左右区域或装置几何常量。
+- 扩展质心提取以返回全部面积合格连通域，原最大连通域入口保持语义；保留原论文 LBAdaptiveSOM 和已有预处理，不以深度学习或替代分割算法跳过论文路线。
+- 增加基于真实时间的恒速预测、速度/预测误差门限和全局分配；大连通域疑似合并时排除并输出缺失/遮挡 NaN，短失踪保留段编号，长失踪结束段。五鱼数量只限制同时活动的轨迹，不补出五个检测或把视角内段号当作物理身份。
+- 新增独立的限长、单视角多鱼预览入口，缩小 ROI 分割后恢复完整图像像素坐标；导出全部原始候选、逐轨迹观测、逐帧诊断、掩膜、原尺度叠加图、轨迹图、模型和来源/单位/哈希记录。
+- 新增明确 synthetic 的五鱼椭圆视频与独立已知坐标示例，拒绝标作 experimental；真实短片段输出标为 experimental，不给出没有人工标签支持的准确率。
+- 添加 SciPy 线性分配依赖，实际安装后执行验证；同步说明真实预览失败现象和旧单鱼 S5/S6 入口仍待多鱼适配。未改核心数据协议或未经确认的物理重建参数。
+- 开工前在 ignored 的 outputs/multifish_rollback_before 保存六个待修改共享文件的精确副本与 SHA-256；基线提交为 b9d0288，保留所有此前工作。
+
+### Testing
+
+- 基线固定脚本 `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1` 为 100 passed in 7.67s。首轮新增测试为 120 passed / 2 failed in 15.89s：测试遗漏 ForegroundMask 必填 ROI 参数，且误把面积排序的轨迹段编号等同构造鱼标签；修正测试合同并按初始化实测位置与独立真值建立一一映射，检查后续身份保持。最终固定脚本为 122 passed in 15.79s，包含 22 项新增测试及全部既有阶段回归。
+- 测试覆盖五个连通域、最大组件兼容、候选顺序变化、非均匀时间与 XY 位移、五鱼数量不补齐、交叉/合并遮挡、全局最大可行配对、短失踪/长失踪、速度与预测门限、输入与参数、尺度转换、限长运行、synthetic 来源保护和完整 SOM 输出链。
+- 执行 `.\.venv\Scripts\python -m pip install -e '.[test]'`，实际安装 scipy 1.17.1；pip check 为 No broken requirements found。
+- 实际执行 `.\.venv\Scripts\python -m fish3d multi-tracking-demo --config configs/synthetic_multi_tracking.yaml --output outputs/synthetic_multi_tracking_demo`：20 帧、前三帧无鱼、15 帧五个有效观测、2 帧四个有效观测；独立真值共 100 行，算法表 83 个检测、85 个轨迹观测，其中 83 有效、2 个明确缺失，共 5 个连续段编号，观测质心按独立已知坐标验证。
+- 实际执行 `.\.venv\Scripts\python -m fish3d track-multi-video --input data/raw/experiment_001.mp4 --config configs/experiment_001_multi_preview.yaml --output outputs/experiment_001_multi_preview`：处理 60 帧、0.0–5.9 s，解码器时间戳 60 帧有效；本地记录耗时 24.425 s，仅为本次预览运行耗时，不声称全片性能。
+- 真实预览记录 758 个面积合格候选（不是 758 条鱼）、290 条轨迹观测，其中 205 有效；有效轨迹数直方图为 {0:1,1:2,2:9,3:18,4:19,5:11}。状态包括 initialized 16、tracked 189、missing 72、lost 11、occluded 2；累计 16 个段编号显示轨迹断裂，不能报告五鱼稳定跟踪成功或身份切换准确率。
+- 独立检查两组 CSV 帧计数、候选/轨迹计数一致、同帧同编号唯一、来源区分、px/processed_full_frame 单位、有效观测不超过 5、无效点全 NaN且面积 0，视频/配置 SHA-256 和模型来源/处理帧数一致。两组共 240 张逐帧 PNG 全部可解码且尺寸正确；真实缩放掩膜为 92×128，原尺度叠加图为 960×800。
+- 目视检查真实第 30/59 帧叠加：存在气泡、缸壁/底部及边缘前景候选，真实五鱼身份尚未持续保持；本次真实五鱼稳定跟踪未通过验收。视角确认和群体数量不等同目标识别参考标签。
+- git diff --check 无输出；git ls-files -ci --exclude-standard 无输出；原视频、实验/synthetic 派生结果及回滚副本仍被 Git 忽略；六个回滚副本哈希与保存时一致，progress.md 原内容作为字节前缀保留。
+
+### Notes
+
+- `src/fish3d/centroid.py`：新增全部合格连通域输出，原 extract 通过首项保留最大组件行为。
+- `src/fish3d/multi_tracking.py`：新增多鱼配置、恒速预测/门限/全局分配、合并候选处理及带状态的二维段观测。
+- `src/fish3d/multi_tracking_processing.py`：新增原算法限长预览、缩放坐标恢复、全部候选/轨迹/帧表、图像/模型记录及 synthetic 构造。
+- `src/fish3d/__main__.py`：新增 multi-tracking-demo 和 track-multi-video，保留原阶段命令。
+- `configs/experiment_001_multi_preview.yaml`：新增真实五鱼、左实体视角、待确认 ROI 和前 60 帧预览参数，无物理标定猜测。
+- `configs/synthetic_multi_tracking.yaml`：新增五个合成目标与短失踪的图像、跟踪和限长参数。
+- `tests/test_multi_tracking.py`：新增多目标、遮挡、身份/时间、数量约束、尺度和完整原算法链测试。
+- `pyproject.toml`：添加 scipy>=1.11,<2，供线性分配使用。
+- `docs/multi_fish_tracking.md`：记录确认的实验信息、工程扩展、配置/坐标、入口与输出、实际失败现象和后续多鱼三维缺口。
+- `docs/data_contract.md`：增加独立多鱼二维表、同帧多编号、缺失及尺度合同，明确原单鱼后续入口不接收该表。
+- `README.md`：补充最终五鱼要求与真实实体视角预览命令/限制，不声称完整多鱼系统交付。
+- `progress.md`：仅追加本轮结果、真实验收缺口和回滚说明。
+- 已知问题：真实短片段的气泡/缸壁候选与背景初始化导致轨迹断裂，原尺度 ROI 边界仍待确认；缩小会损失鱼体细节。当前只有实体二维预览，没有真实标签评价、多鱼跨视角对应、逐鱼三维/行为接入或全片验证。下一最小工作是处理已观察到的真实前景干扰与轨迹断裂，不能直接跳到五鱼三维行为结论。
+- 精确回滚本轮：在仓库根目录执行 `$multiRollbackRoot = (Resolve-Path '.\outputs\multifish_rollback_before').Path; @('README.md','docs/data_contract.md','src/fish3d/__main__.py','src/fish3d/centroid.py','pyproject.toml','progress.md') | ForEach-Object { Copy-Item -LiteralPath (Join-Path $multiRollbackRoot $_) -Destination $_ -Force }`；先执行 `git clean -n -- configs/experiment_001_multi_preview.yaml configs/synthetic_multi_tracking.yaml docs/multi_fish_tracking.md src/fish3d/multi_tracking.py src/fish3d/multi_tracking_processing.py tests/test_multi_tracking.py` 核对，再将 `-n` 改为 `-f` 执行。恢复依赖文件后可执行 `.\.venv\Scripts\python -m pip install -e '.[test]'` 重建包元数据；额外已安装的 SciPy 可保留，不影响旧算法。本轮未提交或推送。
+
+## 2026-10-15 - Task: 新增两份实验视频接入及气泡/短暂候选的受控优化
+
+### What was done
+
+- 检查新增 EVE2/EVE3 与原视频的首段、中段、末段附近画面和解码信息；两份新增视频均为 2448×2048、约 10 fps，报告时长分别约 1790.647/1853.195 s，仍有暗鱼体、气泡和边缘干扰。
+- 提供适配新增尺寸的初步实体/镜像 ROI、像素关联门限与原算法预览配置；新增视频鱼数和视角仍待用户确认，五鱼容量和对应方向明确标为 pending，不作为已确认实验事实。
+- 在不替换或改动论文 SOM 的前提下增加可关闭的像素二阶矩主次轴比筛选，记录面积筛选前后的组件特征和拒绝数量；真实对照表明形状筛选导致轨迹更碎，保留实验分支，默认关闭。
+- 增加可关闭的连续观测确认：短暂候选不立即获得正式编号；三帧确认仅导出当前实测点，不回填未确认点或预测点；未确认候选不占正式容量，缺失/跳帧中断确认，原默认一帧行为保留。
+- 增加严格的一变量对照脚本：要求视频哈希、视角、时间范围和尺度相同，配置仅改变指定参数，且 SOM 掩膜逐帧逐字节一致；输出诊断数量，不以段数减少替代准确率评价。
+- 生成三视频各两帧的原尺寸人工复核图、前后预测对照，以及 30 个尚未标注的空白反馈槽位；整理交给实验人员的照明、稳定机位、供氧记录、背景参考、时间信息和快行为采样需求。
+- 保留本轮开始前已有全部未提交工作，七个本轮共享文件的精确副本/哈希保存于 ignored 的 outputs/optimization_20261015/rollback_before；无依赖新增、无原视频改写、无多鱼三维或真实准确率完成声明。
+
+### Testing
+
+- 先实际运行两个秒级可复现失败探针：5 个不同方向鱼形目标加 10 个圆气泡，原组件提取得到 15 而非 5；单帧噪声原跟踪器立刻获得 1 个正式编号，随后缺失。它们分别驱动当前组件提取和多目标跟踪的真实代码路径，不是固定模拟输出。
+- 先写形状测试，6 项因缺少新接口/诊断字段失败；实现后连同原 S4/多鱼定向回归为 41 passed in 9.49s。确认机制先写 5 项测试失败，实现后连同原多鱼回归为 27 passed in 8.07s；补充超过容量的持续候选检查后，确认测试 6 passed in 0.50s。
+- 首次完整固定脚本为 133 passed in 17.18s；增加容量用例后，最终执行 `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1` 为 134 passed in 11.55s，含 12 项本轮新增用例和此前 122 项回归。
+- 三个视频分别运行 baseline、shape、confirmed 共九次 `track-multi-video`，每次处理同一视频开头 60 帧，累计 540 次帧处理、180 个不同视频帧时刻；仅为约 6 s 预览，不代表约半小时全片验收。命令配置与目录见 docs/multi_fish_tracking.md。
+- 独立形状门限 1.0→1.8：候选数分别 758→581、879→551、1241→704，但正式段数 16→21、14→18、13→16，故没有把它设为默认优化或声称真实气泡误检率降低。
+- 独立确认帧数 1→3，形状仍关闭：正式段数分别 16→15、14→12、13→8；有效实测观测数 205→181、194→174、201→193。确认产生延迟和少量短时目标丢弃，这些数字不代表物理身份准确率。
+- `scripts/compare_multi_runs.py` 实际执行三组 shape 与三组 confirmation 对照，各对的原始 SOM 掩膜逐帧逐字节一致；输出输入/配置哈希及完整诊断值。当前默认一帧跟踪器重放三组旧基线检测表，290/285/290 行轨迹的帧号、时间、XY、面积、有效性、编号和状态逐项完全相同，证明默认兼容。
+- 独立核验九次运行的视频/配置 SHA-256、每次 60 帧、组件/候选/有效轨迹计数一致、同帧同编号唯一、最多五条正式有效观测、缺失坐标全 NaN且面积 0、experimental 来源、px/processed_full_frame 输出及未验证标记。1620 张逐帧 PNG 全部可解码且尺寸正确，12 张人工反馈 JPEG 可解码；30 个反馈槽位全部保持 pending_human、XY 空白，未被当作人工标签。
+- 目视检查 EVE2 第 59 帧和 EVE3 第 30 帧前后预测图：气泡/扰动仍可能被持续跟踪、暗鱼体仍有漏检，五鱼物理身份未稳定验证。没有人工参考标签，不能宣称召回、ID 切换率或真实行为准确率改善。
+- pip check 无依赖冲突；git diff --check 与 git ls-files -ci --exclude-standard 无输出。两份新增原视频、全部运行结果和反馈模板仍被 Git 忽略；七个回滚副本哈希一致，旧 progress.md 字节内容保留为完整前缀。
+
+### Notes
+
+- `src/fish3d/centroid.py`：增加默认关闭的轴比门限与面积/形状诊断，原最大组件与默认候选语义兼容。
+- `src/fish3d/multi_tracking.py`：增加默认一帧兼容、可配置三帧确认、内部暂存和已确认优先的关联管理，不输出暂存预测坐标或消耗正式段号。
+- `src/fish3d/multi_tracking_processing.py`：增加组件特征表、面积/形状/暂存帧统计、有效配置及算法版本记录。
+- `scripts/compare_multi_runs.py`：新增严格校验同视频同分割、仅改变一个参数的对照汇总命令。
+- `tests/test_component_shape.py`：新增旋转不变的鱼形/圆形构造验证、默认兼容、非法门限和退化组件测试。
+- `tests/test_track_confirmation.py`：新增单帧噪声、五鱼持续候选、跳帧重置、容量与确认参数测试。
+- `configs/eve2_multi_preview.yaml`、`configs/eve3_multi_preview.yaml`：新增两份高分辨率真实视频的基线预览配置，鱼数/视角待确认、ROI 初估。
+- `configs/experiment_001_multi_shape.yaml`、`configs/eve2_multi_shape.yaml`、`configs/eve3_multi_shape.yaml`：分别新增单独改变轴比门限的实验配置，实测未作为默认优化。
+- `configs/experiment_001_multi_confirmed.yaml`、`configs/eve2_multi_confirmed.yaml`、`configs/eve3_multi_confirmed.yaml`：分别新增单独改变连续确认帧数、保持形状关闭的试跑配置。
+- `docs/multi_fish_tracking.md`：补充实际新增视频信息、两项实验方法/代价、真实负结果和完整受控对照运行方式。
+- `docs/video_feedback.md`：新增具体人工复核帧、原坐标标注约定、空白槽位说明和交给实验人员的采集要求。
+- `docs/data_contract.md`：补充可选组件形状、局部掩膜特征与正式/暂存轨迹合同，不改核心接口数据结构。
+- `README.md`：更新真实短片段接入状态，增加新视频确认配置入口和人工反馈文档。
+- `progress.md`：仅追加本轮实验、负结果、验证及精确回滚记录，不重写既有历史。
+- 本轮源代码/正式文档改动共上述 19 个文件；前一轮未提交的依赖、命令入口、原多鱼配置与测试均保留。所有新增原视频仅读取，派生对照/人工复核资料位于 ignored 的 outputs/optimization_20261015。
+- 研究限制：确认机制也可能稳定气泡等错误目标；形状筛选会拒绝迎面或弯曲的真实鱼。新增视频鱼数/映射、无鱼背景和标定文件尚待人工反馈，不能将五鱼容量、离散槽位或算法段号当真值。下一最小动作是确认新增视频信息，并在已给的原尺寸第 30/59 帧标出鱼/气泡及遮挡，再进行标签驱动的分割优化；不跳到三维/行为结论。
+- 精确回滚本轮并保留上轮未提交工作：在仓库根目录执行 `$optimizationRollbackRoot = (Resolve-Path '.\outputs\optimization_20261015\rollback_before').Path; @('src/fish3d/centroid.py','src/fish3d/multi_tracking.py','src/fish3d/multi_tracking_processing.py','README.md','docs/data_contract.md','docs/multi_fish_tracking.md','progress.md') | ForEach-Object { Copy-Item -LiteralPath (Join-Path $optimizationRollbackRoot $_) -Destination $_ -Force }`；先执行 `git clean -n -- configs/eve2_multi_preview.yaml configs/eve3_multi_preview.yaml configs/experiment_001_multi_shape.yaml configs/eve2_multi_shape.yaml configs/eve3_multi_shape.yaml configs/experiment_001_multi_confirmed.yaml configs/eve2_multi_confirmed.yaml configs/eve3_multi_confirmed.yaml tests/test_component_shape.py tests/test_track_confirmation.py scripts/compare_multi_runs.py docs/video_feedback.md` 核对，再将 `-n` 改为 `-f` 执行。本轮未提交或推送，不用 git restore HEAD 覆盖前一轮工作。
+
+## 2026-10-15 - Task: 按人工确认修正新增视频鱼数并建立圈图反馈目录
+
+### What was done
+
+- 记录用户确认：EVE2/EVE3 各有 3 条鱼，原五条中两条损耗；experiment_001 保持已确认的 5 条。将两视频各三个配置变体的数量改为 3，数量来源标记为 confirmed_by_user，保留现有 ROI/方向判断状态和算法参数。
+- 建立 data/annotations 作为圈图输入目录，说明视频简称、帧号、marked 命名和原尺寸标注方式；创建按 5/3/3 数量分配的 22 槽空白模板，保留原 30 槽历史模板和原图。
+- 同步说明旧优化表是在五鱼容量假设下产生，不能作为已确认三鱼条件的验收结果。旧输出的配置快照/哈希保留，当前 YAML 已更新；本轮只做数量与反馈路径修正，没有再次调参或重新处理真实视频。
+- 在 ignored 的 outputs/count_correction_20261015/rollback_before 保存十一份开工前副本及哈希，保留此前所有未提交工作。
+
+### Testing
+
+- 实际加载两视频六份 YAML，通过 MultiTrackingConfig/VideoConfig 校验，均为 experimental、expected_fish_count=3、confirmed_by_user；原 experiment_001 配置仍为 5。
+- 新模板 annotation_template_confirmed_counts.csv 共 22 个槽位，原视频两帧各 5 个、新视频各两帧各 3 个；全部为 pending_human、XY 留空，不作为人工标签或识别结果。
+- 执行固定脚本 `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1`：134 passed in 11.39s；没有增加只复述配置值的测试。
+- git diff --check 无输出；git check-ignore 确认 data/annotations/eve2_frame_000059_marked.jpg 命中忽略规则；十一份回滚副本哈希保持一致，原日志内容完整保留为字节前缀。
+
+### Notes
+
+- `configs/eve2_multi_preview.yaml`：将 EVE2 面积基线数量修正为人工确认的 3。
+- `configs/eve2_multi_shape.yaml`：将 EVE2 形状试验数量修正为人工确认的 3。
+- `configs/eve2_multi_confirmed.yaml`：将 EVE2 连续确认试验数量修正为人工确认的 3。
+- `configs/eve3_multi_preview.yaml`：将 EVE3 面积基线数量修正为人工确认的 3。
+- `configs/eve3_multi_shape.yaml`：将 EVE3 形状试验数量修正为人工确认的 3。
+- `configs/eve3_multi_confirmed.yaml`：将 EVE3 连续确认试验数量修正为人工确认的 3。
+- `README.md`：区分原视频 5 条与新增视频各 3 条，提供圈图目录并标记旧表适用范围。
+- `docs/data_contract.md`：说明鱼数按视频分别配置，避免把项目多鱼要求固定理解为每片五条。
+- `docs/multi_fish_tracking.md`：记录确认后的数量及旧五鱼容量表的历史性质和复算条件。
+- `docs/video_feedback.md`：新增圈图路径和命名，改用数量修正后的 22 槽模板。
+- `progress.md`：仅追加本轮数量确认、配置验证与回滚说明。
+- `data/annotations/`：新增本地圈图目录，受 data/ 忽略规则保护；其中人工图像属于用户输入资料。
+- `outputs/optimization_20261015/manual_review/annotation_template_confirmed_counts.csv`：新增 22 槽待人工填写模板，原 30 槽文件保留。
+- 当前边界：旧五鱼容量的跟踪结果尚未按三鱼配置重跑；新增方向仍按抽帧判断，ROI 和物理标定未确认。等待圈图后继续基于真实三鱼与人工参考优化，不能将旧五鱼试跑直接当作三鱼验证。
+- 精确回滚本轮：在仓库根目录执行 `$countRollbackRoot = (Resolve-Path '.\outputs\count_correction_20261015\rollback_before').Path; @('configs/eve2_multi_preview.yaml','configs/eve2_multi_shape.yaml','configs/eve2_multi_confirmed.yaml','configs/eve3_multi_preview.yaml','configs/eve3_multi_shape.yaml','configs/eve3_multi_confirmed.yaml','README.md','docs/data_contract.md','docs/multi_fish_tracking.md','docs/video_feedback.md','progress.md') | ForEach-Object { Copy-Item -LiteralPath (Join-Path $countRollbackRoot $_) -Destination $_ -Force }`。回滚保留人工反馈目录与本地模板；本轮未提交或推送。

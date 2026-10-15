@@ -1,0 +1,44 @@
+# User confirmed: five fish, left black-background view is real, right is mirror.
+# Rectangular ROIs below are preliminary estimates from sampled images, not calibration.
+data_source: experimental
+video:
+  expected_width: 960
+  expected_height: 800
+  fps_fallback: 10.0
+preprocessing:
+  median_kernel: 3
+  calibration_file: null
+rois:
+  real: {x: 90, y: 80, width: 370, height: 510}
+  mirror: {x: 490, y: 170, width: 220, height: 400}
+som:
+  mapping_size: 3
+  learning_frames: 10
+  epsilon_learning: 0.02
+  epsilon_online: 0.004
+  learning_rate: 0.02
+  gaussian_sigma: 1.0
+  shadow_gamma: 0.7
+  shadow_beta: 1.0
+  shadow_saturation_tolerance: 0.1
+  shadow_hue_tolerance_deg: 10.0
+# Area and morphology here refer to the resized segmentation mask, not full-frame px.
+centroid:
+  min_area_px: 5
+  max_area_px: 600
+  opening_kernel: 0
+  closing_kernel: 3
+  connectivity: 8
+# Association distances/speeds refer to restored original full-frame image pixels.
+multi_tracking:
+  expected_fish_count: 5
+  max_speed_px_s: 300.0
+  max_gap_s: 0.5
+  max_prediction_error_px: 35.0
+  merge_radius_px: 30.0
+  merge_area_ratio: 1.6
+multi_processing:
+  view: real
+  processing_scale: 0.25
+  max_frames: 60
+  roi_status: preliminary_from_sampled_images

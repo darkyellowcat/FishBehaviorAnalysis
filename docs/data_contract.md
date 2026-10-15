@@ -53,3 +53,31 @@ is_valid 和 frantic_evaluable。无效/未知帧的 false 是未检出，不能
 `behavior_events.csv` 附来源、单位、坐标系及 `result_type=rule_prediction`；
 不包含无真实标签支持的识别准确率。所有阈值单位及起止边界详见 `behavior_analysis.md`。
 
+## 多鱼二维预览合同
+
+最终需求包含多鱼；experiment_001 已确认 5 条，EVE2/EVE3 已确认各 3 条，数量按视频配置。
+原视频左侧黑底是实体、右侧是镜像，新增视频方向按抽帧判断。
+`extract_all` 返回通过面积及可选形状门限的连通域，默认不启用形状限制，原 `extract` 的最大目标语义保持不变。
+`MultiFishTracker` 在原 Detection2D/TrackedDetection 之外附加状态，不修改核心接口。
+
+多鱼 `detections.csv` 同一帧同一视角可以有多行，保留候选索引和未分配状态；
+`tracks_2d.csv` 用 `(frame_id, view, fish_id)` 区分轨迹观测，同帧可以有多个编号。
+已有轨迹缺失、疑似合并遮挡或丢失时坐标均为 NaN，面积为 0，不导出预测位置。
+尚无轨迹的帧只在 frames.csv 中记录计数，不能因已知鱼数补写虚构目标。
+
+分割掩膜为缩放 ROI 局部像素；检测/轨迹输出质心换回原尺度 processed_full_frame / px。
+输出 area_px 为近似原尺度等效面积，配置面积筛选在缩放掩膜上进行，详见 `multi_fish_tracking.md`。
+这是独立二维预览入口，旧 S5/S6 单鱼 CSV 入口尚不接收同帧多鱼记录；
+视角内编号不表示跨视角对应或经验证的物理鱼身份。
+
+多鱼预览增加 `components.csv`，保存形状筛选前全部面积合格组件的局部缩放质心、
+面积、主次轴比及是否通过形状筛选；不是三维坐标或人工鱼标签。
+frames.csv 另记 area_candidate_count、shape_rejected_count 和 tentative_candidate_count。
+原 `candidate_count` 与 detections.csv 均表示形状筛选后的候选；默认关闭时与原定义相同。
+`cleaned_masks/` 仍是形态学后的全部前景，不因形状拒绝而删除像素。
+
+`birth_confirmation_frames` 默认 1，保持旧跟踪行为；配置为 3 时新候选先输出到检测表，
+状态为 tentative，连续三帧观测确认后才分配正式编号并写轨迹表。
+不把前两帧或预测点回填为正式轨迹。未确认候选不占已确认鱼数容量，
+错失/跳帧会中断其连续确认；已确认轨迹的缺失、NaN 和长失踪语义不变。
+

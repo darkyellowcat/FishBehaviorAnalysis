@@ -5,8 +5,8 @@
 去畸变接口、中值滤波、HSV 转换和双视角分区，S3 的 LBAdaptiveSOM 前景分割，
 S4 的单鱼质心提取与二维时间跟踪、S5 的单鱼双视角对应与论文理想像素模型重建，
 以及 S6 的三类规则行为识别、CSV 接入和图表导出。
-尚未接入真实实验视频，
-也未验证真实三维重建或行为识别准确率。
+已进行真实实验视频的短片段二维接入预览，
+尚未完成真实全片、三维重建或行为识别准确率验证。
 
 ## 安装
 
@@ -55,6 +55,35 @@ S6 规则、事件时间边界、单位、来源保护、输出和真实标签�
 行为示例从配置构造 51 个 synthetic 坐标，计算狂游、持续漂浮与跳出规则预测；
 缺失或未知特征不当作正常，阈值须在真实数据取得后重新确认。
 视频尺寸和 ROI 必须与配置一致；示例参数仅供 synthetic 验证。
+
+## 多鱼需求与真实视频接入预览
+
+最终要求为多鱼。experiment_001 经用户确认有 5 条鱼，左侧黑底为实体视角，右侧为镜像。
+用户后续确认 EVE2、EVE3 各有 3 条鱼（两条损耗），数量按各视频独立配置。
+新增全部候选质心和多目标二维关联入口，保留原单鱼示例与命令。
+实体视角配置、关联算法、缩放/缺失合同及限制见 `docs/multi_fish_tracking.md`。
+
+```powershell
+.\.venv\Scripts\python -m fish3d multi-tracking-demo --config configs/synthetic_multi_tracking.yaml --output outputs/synthetic_multi_tracking_demo
+.\.venv\Scripts\python -m fish3d track-multi-video --input data/raw/experiment_001.mp4 --config configs/experiment_001_multi_preview.yaml --output outputs/experiment_001_multi_preview
+```
+
+第二条仅处理实体视角前 60 帧，ROI 由画面初步估计、尚待确认；0.25 尺度分割后恢复原尺度坐标。
+已知五鱼不强制每帧检出五条，编号仅为视角内轨迹段。多鱼跨视角匹配、三维重建与行为入口
+尚未适配完成，不能直接把该多行二维 CSV 输入原单鱼重建命令；完整真实视频验证尚未完成。
+
+2026-10-15 新增 EVE2/EVE3 两份 2448×2048 视频的独立配置及可重复对照。
+连续观测确认可减少短暂候选直接产生的正式编号；形状筛选在真实数据上使轨迹更碎，
+保留为实验选项，默认关闭。两者均保留论文 SOM，不能据段数减少宣称身份准确率提高。
+
+```powershell
+.\.venv\Scripts\python -m fish3d track-multi-video --input data/raw/VIDEO_20261014_EVE2.mp4 --config configs/eve2_multi_confirmed.yaml --output outputs/eve2_confirmed
+```
+
+新增视频的三个配置变体均已修正为 3 条鱼；左右映射仍按抽帧判断，ROI 未经标定确认。
+此前使用五鱼容量的试跑是历史诊断，不是三鱼条件下的验收结果。
+圈图反馈放在 `data/annotations/`，例如 `eve2_frame_000059_marked.jpg`，该目录不上传 Git。
+人工反馈图、标注约定及交给实验人员的视频要求见 `docs/video_feedback.md`。
 
 ## 开发阶段
 

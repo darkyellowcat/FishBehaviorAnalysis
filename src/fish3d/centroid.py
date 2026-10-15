@@ -1,6 +1,7 @@
-"""Single-fish pixel centroids with explicit engineering mask cleanup."""
+"""Pixel centroids with explicit engineering mask cleanup and component selection."""
 
 from dataclasses import dataclass
+from math import isfinite, sqrt
 from pathlib import Path
 
 import cv2
@@ -17,6 +18,7 @@ class CentroidConfig:
     opening_kernel: int
     closing_kernel: int
     connectivity: int
+    min_axis_ratio: float = 1.0
 
     def __post_init__(self) -> None:
         if self.min_area_px < 1 or self.max_area_px < self.min_area_px:
@@ -26,6 +28,8 @@ class CentroidConfig:
                 raise ValueError("morphology kernels must be 0 (disabled) or odd and at least 3")
         if self.connectivity not in (4, 8):
             raise ValueError("connectivity must be 4 or 8")
+        if not isfinite(self.min_axis_ratio) or self.min_axis_ratio < 1:
+            raise ValueError("min_axis_ratio must be finite and at least 1 (disabled)")
 
 
 def load_centroid_config(path: Path) -> CentroidConfig:
@@ -46,9 +50,18 @@ class ConnectedComponentCentroidExtractor:
         self.config = config
         self.last_cleaned_mask: np.ndarray | None = None
         self.last_candidate_count = 0
+        self.last_area_candidate_count = 0
+        self.last_shape_rejected_count = 0
+        self.last_component_features: list[dict] = []
 
     def extract(self, mask: ForegroundMask) -> Detection2D | None:
         """Return None when no component satisfies the configured area limits."""
+
+        candidates = self.extract_all(mask)
+        return candidates[0] if candidates else None
+
+    def extract_all(self, mask: ForegroundMask) -> list[Detection2D]:
+        """Return area/optional-shape candidates, largest first, without a count cap."""
 
         image = mask.mask
         if image.dtype != np.uint8 or image.ndim != 2 or image.size == 0:
@@ -66,23 +79,42 @@ class ConnectedComponentCentroidExtractor:
                     borderType=cv2.BORDER_CONSTANT, borderValue=0,
                 )
         self.last_cleaned_mask = cleaned
-        count, _, stats, centers = cv2.connectedComponentsWithStats(
+        count, labels, stats, centers = cv2.connectedComponentsWithStats(
             cleaned, connectivity=self.config.connectivity,
         )
         candidates = [
             label for label in range(1, count)
             if self.config.min_area_px <= stats[label, cv2.CC_STAT_AREA] <= self.config.max_area_px
         ]
+        self.last_area_candidate_count = len(candidates)
+        self.last_component_features = []
+        retained = []
+        for label in candidates:
+            left, top, width, height = stats[label, :4]
+            component = (labels[top:top + height, left:left + width] == label).astype(np.uint8)
+            moments = cv2.moments(component, binaryImage=True)
+            covariance = np.array([[moments["mu20"], moments["mu11"]],
+                                   [moments["mu11"], moments["mu02"]]]) / moments["m00"]
+            minor, major = np.linalg.eigvalsh(covariance)
+            ratio = 1.0 if major <= 0 else (sqrt(major / minor) if minor > 0 else float("inf"))
+            accepted = ratio >= self.config.min_axis_ratio
+            self.last_component_features.append({
+                "component_label": label, "x_px": float(centers[label, 0] + mask.roi_x),
+                "y_px": float(centers[label, 1] + mask.roi_y), "area_px": int(stats[label, cv2.CC_STAT_AREA]),
+                "axis_ratio": ratio, "shape_accepted": accepted,
+            })
+            if accepted:
+                retained.append(label)
+        candidates = retained
         self.last_candidate_count = len(candidates)
-        if not candidates:
-            return None
+        self.last_shape_rejected_count = self.last_area_candidate_count - self.last_candidate_count
         # Equal areas are resolved by centroid y then x, independent of label IDs.
-        selected = min(candidates, key=lambda label: (
+        candidates.sort(key=lambda label: (
             -int(stats[label, cv2.CC_STAT_AREA]), centers[label, 1], centers[label, 0],
         ))
-        return Detection2D(
+        return [Detection2D(
             mask.frame_id, mask.timestamp_s, mask.view,
-            float(centers[selected, 0] + mask.roi_x),
-            float(centers[selected, 1] + mask.roi_y),
-            int(stats[selected, cv2.CC_STAT_AREA]), True,
-        )
+            float(centers[label, 0] + mask.roi_x),
+            float(centers[label, 1] + mask.roi_y),
+            int(stats[label, cv2.CC_STAT_AREA]), True,
+        ) for label in candidates]

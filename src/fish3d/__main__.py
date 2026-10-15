@@ -51,7 +51,26 @@ def main() -> None:
     behavior.add_argument("--input", type=Path, required=True)
     behavior.add_argument("--config", type=Path, required=True)
     behavior.add_argument("--output", type=Path, required=True)
+    multi_demo = subparsers.add_parser("multi-tracking-demo", help="generate and track a labeled five-fish synthetic video")
+    multi_demo.add_argument("--config", type=Path, required=True)
+    multi_demo.add_argument("--output", type=Path, required=True)
+    multi = subparsers.add_parser("track-multi-video", help="preview multi-fish 2D tracking in one configured view")
+    multi.add_argument("--input", type=Path, required=True)
+    multi.add_argument("--config", type=Path, required=True)
+    multi.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+
+    if args.command in ("multi-tracking-demo", "track-multi-video"):
+        from fish3d.multi_tracking_processing import generate_multi_video, track_multi_video
+
+        if args.command == "multi-tracking-demo":
+            video_path = args.output / "synthetic_input.avi"
+            generate_multi_video(video_path, args.config, args.output / "synthetic_truth.csv")
+        else:
+            video_path = args.input
+        manifest = track_multi_video(video_path, args.config, args.output)
+        print(f"Processed {manifest['frame_count']} {manifest['data_source']} frames in {manifest['view']}; observed track-count histogram: {manifest['valid_track_count_histogram']} in {args.output.resolve()}")
+        return
 
     if args.command in ("behavior-demo", "analyze-behavior"):
         from fish3d.behavior_processing import analyze_behavior, generate_behavior_demo

@@ -1,0 +1,55 @@
+# Three consecutive observations before formal track birth; shape filter stays disabled.
+data_source: experimental
+video:
+  expected_width: 2448
+  expected_height: 2048
+  fps_fallback: 10.0
+preprocessing:
+  median_kernel: 3
+  calibration_file: null
+rois:
+  real:
+    x: 170
+    y: 80
+    width: 980
+    height: 1440
+  mirror:
+    x: 1360
+    y: 350
+    width: 900
+    height: 1130
+som:
+  mapping_size: 3
+  learning_frames: 10
+  epsilon_learning: 0.02
+  epsilon_online: 0.004
+  learning_rate: 0.02
+  gaussian_sigma: 1.0
+  shadow_gamma: 0.7
+  shadow_beta: 1.0
+  shadow_saturation_tolerance: 0.1
+  shadow_hue_tolerance_deg: 10.0
+centroid:
+  min_area_px: 5
+  max_area_px: 600
+  opening_kernel: 0
+  closing_kernel: 3
+  connectivity: 8
+  min_axis_ratio: 1.0
+multi_tracking:
+  expected_fish_count: 3
+  max_speed_px_s: 765.0
+  max_gap_s: 0.5
+  max_prediction_error_px: 89.25
+  merge_radius_px: 76.5
+  merge_area_ratio: 1.6
+  birth_confirmation_frames: 3
+multi_processing:
+  view: real
+  processing_scale: 0.1
+  max_frames: 60
+  roi_status: preliminary_from_sampled_images
+experiment_notes:
+  population_count_status: confirmed_by_user
+  view_mapping_status: inferred_from_frames_pending_user_confirmation
+  roi_status: preliminary_from_sampled_images
