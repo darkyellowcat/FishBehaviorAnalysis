@@ -1,0 +1,60 @@
+# Four fish confirmed by user; rectangular ROIs estimated from sampled images.
+# Preview only: paper SOM, shape filter disabled, three-frame confirmation.
+data_source: experimental
+video:
+  expected_width: 960
+  expected_height: 800
+  fps_fallback: 10.0
+preprocessing:
+  median_kernel: 3
+  calibration_file: null
+rois:
+  real:
+    x: 90
+    y: 20
+    width: 390
+    height: 610
+  mirror:
+    x: 550
+    y: 70
+    width: 370
+    height: 540
+som:
+  mapping_size: 3
+  learning_frames: 10
+  epsilon_learning: 0.02
+  epsilon_online: 0.004
+  learning_rate: 0.02
+  gaussian_sigma: 1.0
+  shadow_gamma: 0.7
+  shadow_beta: 1.0
+  shadow_saturation_tolerance: 0.1
+  shadow_hue_tolerance_deg: 10.0
+centroid:
+  min_area_px: 5
+  max_area_px: 600
+  opening_kernel: 0
+  closing_kernel: 3
+  connectivity: 8
+  min_axis_ratio: 1.0
+multi_tracking:
+  expected_fish_count: 4
+  max_speed_px_s: 300.0
+  max_gap_s: 0.5
+  max_prediction_error_px: 35.0
+  merge_radius_px: 30.0
+  merge_area_ratio: 1.6
+  birth_confirmation_frames: 3
+multi_processing:
+  view: real
+  processing_scale: 0.25
+  max_frames: 60
+  roi_status: preliminary_from_start_middle_late_samples
+experiment_notes:
+  video_filename: a8d94062481beee3174300508337833c.mp4
+  population_count_status: confirmed_by_user
+  population_history: initial_5_lost_1_now_4_no_3_stage
+  view_mapping_status: inferred_from_frames_pending_user_confirmation
+  roi_status: preliminary_from_start_middle_late_samples
+  association_threshold_source: inherited_from_experiment_001_multi_confirmed.yaml_not_label_tuned
+  background_reference_status: not_used_fish_absence_unconfirmed

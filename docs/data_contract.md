@@ -55,7 +55,8 @@ is_valid 和 frantic_evaluable。无效/未知帧的 false 是未检出，不能
 
 ## 多鱼二维预览合同
 
-最终需求包含多鱼；experiment_001 已确认 5 条，EVE2/EVE3 已确认各 3 条，数量按视频配置。
+最终需求包含多鱼；用户于 2026-10-15 明确：最初 5 条，损耗 1 条后为 4 条，从未有过 3 条的阶段。
+experiment_001 按最初 5 条配置；EVE2/EVE3 和本次新增的 a3d72…_raw/a8d940… 视频按后续 4 条记录。
 原视频左侧黑底是实体、右侧是镜像，新增视频方向按抽帧判断。
 `extract_all` 返回通过面积及可选形状门限的连通域，默认不启用形状限制，原 `extract` 的最大目标语义保持不变。
 `MultiFishTracker` 在原 Detection2D/TrackedDetection 之外附加状态，不修改核心接口。

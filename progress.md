@@ -407,3 +407,113 @@
 - `outputs/optimization_20261015/manual_review/annotation_template_confirmed_counts.csv`：新增 22 槽待人工填写模板，原 30 槽文件保留。
 - 当前边界：旧五鱼容量的跟踪结果尚未按三鱼配置重跑；新增方向仍按抽帧判断，ROI 和物理标定未确认。等待圈图后继续基于真实三鱼与人工参考优化，不能将旧五鱼试跑直接当作三鱼验证。
 - 精确回滚本轮：在仓库根目录执行 `$countRollbackRoot = (Resolve-Path '.\outputs\count_correction_20261015\rollback_before').Path; @('configs/eve2_multi_preview.yaml','configs/eve2_multi_shape.yaml','configs/eve2_multi_confirmed.yaml','configs/eve3_multi_preview.yaml','configs/eve3_multi_shape.yaml','configs/eve3_multi_confirmed.yaml','README.md','docs/data_contract.md','docs/multi_fish_tracking.md','docs/video_feedback.md','progress.md') | ForEach-Object { Copy-Item -LiteralPath (Join-Path $countRollbackRoot $_) -Destination $_ -Force }`。回滚保留人工反馈目录与本地模板；本轮未提交或推送。
+
+## 2026-10-15 - Task: 按最新人工更正统一真实实验视频为四条鱼
+
+### What was done
+
+- 用户明确更正“没有3条鱼，一直是4条”：撤销此前五条、三条及损耗的实验记录，experiment_001、EVE2/EVE3 和最新新增的 a3d72…_raw/a8d940… 两段视频均按四条记录。九份已有真实视频配置统一为 4，其他算法、ROI、尺度和时间参数不变。
+- 同步当前说明与实验配置回归断言，移除运行清单中固定“五个观测”的错误措辞。保留 synthetic 五鱼示例及对应测试，继续验证可配置数量，不将合成数量当作实验事实。
+- 生成三个已有视频各两帧、每帧四个槽位的 24 行待标注模板，全部坐标留空且 pending_human；旧 22/30 槽模板、历史运行清单和旧日志保持原样，明确旧五鱼容量结果不能用于四鱼验收。
+- 最新两段仅记录已确认鱼数与先前抽样信息，本轮未新增 ROI 或重跑视频。修改前十六份文件的精确副本及 SHA-256 保存在 outputs/population_four_20261015/rollback_before。
+
+### Testing
+
+- 实际加载九份真实 YAML，经 VideoConfig/MultiTrackingConfig 校验全部为 experimental、expected_fish_count=4；与备份比较解析后的文档，除该数量字段外完全一致。synthetic_multi_tracking.yaml 仍为 5。
+- 对上述九份配置逐一运行 synthetic 六个持续候选的真实跟踪入口，确认正式有效观测不超过四个、确认完成后恰有四个；随后空候选帧均输出四个缺失观测，XY 全 NaN，不虚构有效点。这是构造输入验证，不是真实视频检测准确率。
+- 执行 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1：134 passed in 13.57s。
+- 新模板 24 行、六组视频/帧、每组四个不同索引；全部 pending_human、XY 空白。十六份回滚副本哈希一致；追加前 progress.md 与备份字节一致。
+- 标准 git diff --check 对原有 CRLF 配置行报行末空白；保留原文件换行，通过单次命令 git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --check，无输出，不改 Git 配置。git ls-files -ci --exclude-standard 无输出；git check-ignore 确认新验证报告和模板被忽略。
+- 检查证据保存在 outputs/population_four_20261015/correction_checks.json。没有真实视频重跑或全片验证，也没有新增依赖。
+
+### Notes
+
+- configs/experiment_001_multi_preview.yaml：原视频基线数量由五改四，并修正人工确认注释。
+- configs/experiment_001_multi_shape.yaml：原视频形状对照数量由五改四。
+- configs/experiment_001_multi_confirmed.yaml：原视频连续确认数量由五改四。
+- configs/eve2_multi_preview.yaml：EVE2 基线数量由三改四，并修正注释。
+- configs/eve2_multi_shape.yaml：EVE2 形状对照数量由三改四，并修正注释。
+- configs/eve2_multi_confirmed.yaml：EVE2 连续确认数量由三改四。
+- configs/eve3_multi_preview.yaml：EVE3 基线数量由三改四，并修正注释。
+- configs/eve3_multi_shape.yaml：EVE3 形状对照数量由三改四，并修正注释。
+- configs/eve3_multi_confirmed.yaml：EVE3 连续确认数量由三改四。
+- README.md：统一当前实验四鱼事实，撤销旧数量并说明历史运行不作为当前验收。
+- docs/data_contract.md：纠正实验群体数量，保留原多鱼数据合同。
+- docs/multi_fish_tracking.md：纠正当前数量和容量说明，保留五鱼 synthetic 结果和错误容量下的历史诊断。
+- docs/video_feedback.md：记录最新两段也为四鱼、尚未独立运行，指向新模板，并撤销旧模板数量依据。
+- src/fish3d/multi_tracking_processing.py：将运行清单中的固定五鱼措辞改为配置数量说明，算法不变。
+- tests/test_multi_tracking.py：现有真实配置来源保护用例的数量断言改为四，synthetic 测试不变。
+- progress.md：仅追加本轮更正、测试和回滚记录，历史内容不改写。
+- outputs/population_four_20261015/manual_review/annotation_template_four_fish.csv：新增 24 行无坐标待人工确认模板，Git 忽略。
+- outputs/population_four_20261015/correction_checks.json：保存配置、容量/缺失行为与实际 pytest 验证结果，Git 忽略。
+- outputs/population_four_20261015/rollback_before/：保存本轮十六份正式文件的改前副本和 files.json 哈希索引，Git 忽略。
+- 回滚方式（仓库根目录 PowerShell）：`$fourFishRollbackRoot = (Resolve-Path '.\outputs\population_four_20261015\rollback_before').Path; $fourFishRollbackFiles = Get-Content -LiteralPath (Join-Path $fourFishRollbackRoot 'files.json') -Raw | ConvertFrom-Json; $fourFishRollbackFiles.PSObject.Properties.Name | ForEach-Object { Copy-Item -LiteralPath (Join-Path $fourFishRollbackRoot $_) -Destination $_ -Force }`。此命令恢复十六份正式文件（包括改前日志），保留 ignored 的验证证据和模板；恢复后数量回到已被用户否定的旧值，仅用于撤销本轮施工，不作为真实数量证明。未提交或推送。
+
+## 2026-10-15 - Task: 明确五条损耗一条后的四条阶段并撤销三条记录
+
+### What was done
+
+- 用户最终澄清为最初五条、损耗一条后四条，从未有过三条阶段。纠正上一轮“始终四条”的错误理解；原 experiment_001 按最初五条，EVE2/EVE3 及最新 a3d72…_raw/a8d940… 两段按后续四条记录。损耗确切时间未知，不推断视频内具体转变帧。
+- 将 experiment_001 三份配置和已有回归断言恢复为五条；后续六份配置保持四条、其余参数不变。保留上一轮通用数量说明以及全部算法代码，不改写历史运行结果。
+- 当前文档统一说明数量阶段：原视频历史五鱼容量正确，EVE2/EVE3 历史五鱼容量错误，后者尚未按四鱼重跑；原视频数量正确也不证明检测或身份准确率。
+- 生成 26 个待标注槽位：原视频两帧各五个、EVE2/EVE3 各两帧各四个，全部 pending_human、XY 空白。旧 22/24/30 槽模板保留并注明不再使用。本轮改前九份正式文件副本及哈希保存在 outputs/population_history_20261015/rollback_before。
+
+### Testing
+
+- 实际加载九份真实配置，数量分别为 5/4/4（三组各三份），全部来源 experimental；原视频三份配置与本轮备份的 YAML 比较，除 expected_fish_count 恢复为 5 外完全相同。synthetic 五鱼配置不变。
+- 执行 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1：134 passed in 14.07s。
+- 验证新模板有 26 行、六组视频/帧、组内索引唯一，所有坐标为空且 label_status=pending_human；不作为人工标签或检测结果。验证九份回滚副本 SHA-256 一致，追加前 progress.md 与备份字节一致。
+- git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --check 通过；沿用 CRLF 识别选项，保留原换行与编码，不修改 Git 配置。git check-ignore 确认新报告和新模板受 outputs/ 忽略规则保护。
+- 验证证据位于 outputs/population_history_20261015/correction_checks.json。本轮只更正数量阶段和使用说明，没有重新处理实验视频或新增依赖。
+
+### Notes
+
+- configs/experiment_001_multi_preview.yaml：原视频基线数量恢复为五，并纠正注释。
+- configs/experiment_001_multi_shape.yaml：原视频形状对照数量恢复为五。
+- configs/experiment_001_multi_confirmed.yaml：原视频连续确认数量恢复为五。
+- tests/test_multi_tracking.py：原视频配置与实验来源保护用例的数量断言恢复为五。
+- README.md：明确五条损耗一条后四条、无三条阶段，并区分原视频与后续视频的历史数量适用性。
+- docs/data_contract.md：按视频记录最初五条与后续四条，不改变数据接口。
+- docs/multi_fish_tracking.md：纠正群体阶段、配置上限和历史运行解释，保留实际算法诊断数据。
+- docs/video_feedback.md：记录损耗一条、无三条阶段，指向新的 26 槽模板并注明旧模板不再使用。
+- progress.md：仅追加本轮最终澄清及验证，旧数量误记作为历史施工记录保留，以本条为准。
+- outputs/population_history_20261015/manual_review/annotation_template_population_history.csv：新增按 5/4/4 分配的 26 槽空白模板，Git 忽略。
+- outputs/population_history_20261015/correction_checks.json：保存实际配置、模板和 pytest 结果，Git 忽略；上一轮报告仅代表当时配置。
+- outputs/population_history_20261015/rollback_before/：保存九份改前文件及哈希索引，Git 忽略。
+- 精确回滚（仓库根目录 PowerShell）：`$populationHistoryRollbackRoot = (Resolve-Path '.\outputs\population_history_20261015\rollback_before').Path; $populationHistoryRollbackFiles = Get-Content -LiteralPath (Join-Path $populationHistoryRollbackRoot 'files.json') -Raw | ConvertFrom-Json; $populationHistoryRollbackFiles.PSObject.Properties.Name | ForEach-Object { Copy-Item -LiteralPath (Join-Path $populationHistoryRollbackRoot $_) -Destination $_ -Force }`。恢复九份正式文件及改前日志，保留 ignored 交付和备份；恢复的是上一轮“始终四条”的错误状态，仅供施工撤销，不作为实验事实。此前未提交的其他修改完整保留；本轮未提交或推送。
+
+## 2026-10-15 - Task: 接入两段新增四鱼视频并完成短片段二维复核
+
+### What was done
+
+- 继续用户已确认的两段四鱼视频 a3d72d0123ef9a90d191f8ee25f5648f_raw.mp4（2448×2048、约 10 fps、报告 2013.946 s）和 a8d94062481beee3174300508337833c.mp4（960×800、10 fps、报告 1800.2 s）。最初 experiment_001 五条、损耗一条后后续四条的记录保持不变，没有三条阶段。
+- 分别读取首帧、中段和约 95% 处画面，建立独立矩形实体/镜像 ROI 配置，扩大上部及底部覆盖，不直接套用旧框。边界来源明确为抽样初估，尚非标定；镜像本轮仅配置边界，实际只运行实体视角。
+- 两份配置保留原论文 SOM、中值滤波/HSV 和已有多目标关联，形状筛选关闭，连续三帧确认，四鱼数量只限制同时活动轨迹，不补齐鱼数。算法源码、依赖及此前全部配置不改；原三视频各配置仍为 5/4/4。
+- 实际通过现有 CLI 各处理开头 60 帧，保存实验来源 CSV、原尺寸叠加图、二值掩膜、模型、轨迹图和运行清单；生成新增两段第 30/59 帧共八张原图/预测复核图，供人工判读。
+- 目视确认多个正式编号落在气泡或底部反射上，暗鱼体仍有漏检。完成的是短片段可运行性、输出合同和问题定位，稳定四鱼跟踪未通过验收；不报告真实准确率或算法改善，不将四个有效观测当作四条正确鱼。
+
+### Testing
+
+- 固定验证脚本 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify.ps1 实际结果：134 passed in 13.85s。本轮是独立输入配置适配，不新增仅复述配置常数的测试。
+- 两次 track-multi-video 均正常退出：a3d72_raw 60 帧、0–5.869 s、1285 个合格候选观测、9 个正式段、140 个有效观测、47 个缺失/丢失观测；有效数量直方图为 0:12,1:6,2:8,3:18,4:16。a8d940 60 帧、0–5.9 s、1666 个候选观测、6 个正式段、201 个有效观测、23 个缺失/丢失观测；直方图为 0:3,1:1,2:4,3:16,4:36。候选/段数均不是物理鱼总数。
+- 分别独立复核输入与配置 SHA-256、清单快照、60 个连续帧号、严格递增的解码器时间、CSV 候选/组件/观测计数、同帧同编号唯一、每帧有效观测不超过四个；有效坐标在对应原尺度 ROI 内，缺失点 XY 全 NaN 且面积为零，experimental/px/processed_full_frame 来源和单位一致。
+- 两次运行都未使用标定、未进行跨视角匹配或重建，物理身份/准确率验证标记均为 false。360 张逐帧 PNG 全部解码且尺寸正确，掩膜值均为 0/255；二维轨迹 PNG 可读，模型 NPZ 可打开且数值数组有限。六张抽样原图及八张复核 JPEG 共十四张均可解码、尺寸符合原视频。
+- 此前十七份 YAML 的 SHA-256 与本轮开工快照完全一致；四份改前共享文件备份哈希一致，追加前日志字节不变。新输出校验证据位于 outputs/new_four_video_20261015/output_checks.json；每次独立 run_manifest.json 保存配置快照与哈希。
+- git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --check 通过，保留原文件 CRLF；git ls-files -ci --exclude-standard 无输出。git check-ignore 确认两段原视频及所有派生结果受 data/ 与 outputs/ 规则保护。
+- 主记忆工具受 approval=never 拒绝，恰一次 memorix resume --fallback --brief-json 又被本机 PowerShell 执行策略阻止；已告知用户，以当前仓库及实际运行证据为准，未声称记忆写入成功。
+
+### Notes
+
+- configs/a3d72_raw_multi_confirmed.yaml：新增高分辨率四鱼实体预览配置，实体 ROI (210,40,1020,1560)、镜像 ROI (1390,150,1030,1450)、分割尺寸 102×156，门限继承已有高分辨率配置并注明未用人工标签调优。
+- configs/a8d940_multi_confirmed.yaml：新增 960×800 四鱼实体预览配置，实体 ROI (90,20,390,610)、镜像 ROI (550,70,370,540)、分割尺寸 98×152，门限继承已有对应分辨率配置。
+- docs/new_four_video_preview.md：新增文件映射、参数来源、可复现命令、实际运行/目视结果、研究限制与新增圈图说明。
+- README.md：增加两段新视频的配置及文档入口，保留最初五条和后续四条的事实。
+- docs/video_feedback.md：更新新增两段接入状态，将本轮优先复核对象指向新增第 59 帧 raw 图及对应预测图，说明不能强行圈满四条。
+- progress.md：仅追加本轮工作和实际验证，保留此前所有历史记录。
+- outputs/new_four_video_20261015/video_review/：新增两段报告元信息及首/中/后抽样原尺寸 JPEG，Git 忽略。
+- outputs/new_four_video_20261015/a3d72_raw_confirmed/、a8d940_confirmed/：新增两次 60 帧的完整运行产物，Git 忽略，不覆盖旧输出。
+- outputs/new_four_video_20261015/manual_review/：新增两段各第 30/59 帧 raw/overlay 原尺寸复核图，Git 忽略，尚无人工坐标或身份标签。
+- outputs/new_four_video_20261015/output_checks.json、config_hashes_before.json：新增本轮运行校验结果与既有配置哈希快照，Git 忽略。
+- outputs/new_four_video_20261015/rollback_before/：保存四份改前共享文件及哈希，其中 docs/multi_fish_tracking.md 本轮未改，其余三份用于精确恢复。
+- 下一最小反馈为两段各第 59 帧中可见实体鱼/反射的圈图，另存 data/annotations/，遮挡或不确定时直接注明；不把算法预测伪造为人工标签。无鱼背景仍未确认，不使用供氧短片冒充空缸，完整三维/行为及整段验证不属于本轮已完成内容。
+- 精确回滚（仓库根目录 PowerShell）：`$newFourRollbackRoot = (Resolve-Path '.\outputs\new_four_video_20261015\rollback_before').Path; @('README.md','docs/video_feedback.md','progress.md') | ForEach-Object { Copy-Item -LiteralPath (Join-Path $newFourRollbackRoot $_) -Destination $_ -Force }; Remove-Item -LiteralPath 'configs/a3d72_raw_multi_confirmed.yaml','configs/a8d940_multi_confirmed.yaml','docs/new_four_video_preview.md'`。仅恢复本轮三份共享文件并删除三份本轮新建正式文件，保留 ignored 运行证据及此前未提交工作；没有递归删除、没有提交或推送。

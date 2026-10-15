@@ -1,4 +1,4 @@
-# Experimental preview; user confirmed three fish; view mapping inferred from images.
+# Experimental preview; user corrected population to four fish; view mapping inferred from images.
 data_source: experimental
 video:
   expected_width: 2448
@@ -37,7 +37,7 @@ centroid:
   connectivity: 8
   min_axis_ratio: 1.8
 multi_tracking:
-  expected_fish_count: 3
+  expected_fish_count: 4
   max_speed_px_s: 765.0
   max_gap_s: 0.5
   max_prediction_error_px: 89.25

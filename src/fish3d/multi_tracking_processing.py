@@ -222,7 +222,7 @@ def track_multi_video(input_path: Path, config_path: Path, output_dir: Path) -> 
         "processing_elapsed_s": perf_counter() - started,
         "limitations": [
             "Single configured view and bounded consecutive preview only, not full-video acceptance.",
-            "Known population count caps active segments, never forces five observed fish.",
+            "Known population count caps active segments, never forces observations to match the population.",
             "Optional birth confirmation delays observations and may reject briefly visible real fish; no backfill.",
             "Candidates may be bubbles/reflections; selected segments are not confirmed physical fish identities.",
             "Optional shape filtering may reject head-on/curled fish and does not prove bubble/fish identity.",

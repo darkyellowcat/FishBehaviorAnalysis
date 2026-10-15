@@ -1,4 +1,4 @@
-# User confirmed: five fish, left black-background view is real, right is mirror.
+# User confirmed initial population: five fish, left black-background view is real, right is mirror.
 # Rectangular ROIs below are preliminary estimates from sampled images, not calibration.
 data_source: experimental
 video:

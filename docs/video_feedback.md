@@ -2,14 +2,22 @@
 
 ## 当前需要人工确认的内容
 
-当前工作目标是多鱼；experiment_001 已确认左实体、右镜像、共五条。
-用户后续确认 EVE2、EVE3 各为三条（两条损耗），六份对应配置已修正，新增视角仍按画面判断。
+当前工作目标是多鱼；用户于 2026-10-15 明确：最初五条，损耗一条后为四条，从未有过三条的阶段。
+experiment_001 的三份配置恢复为最初五条，EVE2/EVE3 的六份配置保持后续四条；撤销此前三条及“始终四条”的记录。
+左实体、右镜像，新增视角仍按画面判断；未提供损耗发生的确切时间，不推断具体视频内的转变帧。
+本次新增 `a3d72d0123ef9a90d191f8ee25f5648f_raw.mp4`（2448×2048，约 10 fps，约 33 分 34 秒）
+和 `a8d94062481beee3174300508337833c.mp4`（960×800，10 fps，约 30 分钟）也均为四条。
+两段已建立各自的初步矩形 ROI 配置；本轮只运行实体视角开头 60 帧，不代表整段检测验证。
+配置、实际诊断与新增复核原图位置见 [新增四鱼视频接入](new_four_video_preview.md)。
+另有“有气/无气”短片仅确认供氧状态不同；未明确确认无鱼，不作为无鱼背景初始化依据。
 如已有同机位、同照明和供氧状态的无鱼背景视频，或相机标定文件，请提供位置。
 没有这些资料时可以继续二维调试，但不能据此确认真实三维坐标。
 
 本轮没有人工参考标签，也没有用算法结果伪造标签。
-给用户的最小反馈任务是先查看 EVE2/EVE3 第 30、59 帧（约 3 s、5.9 s），
-指出实体图中可见的鱼及气泡、漏检和错误标记；看不清或被遮挡时直接说明，不补猜坐标。
+当前优先查看 `outputs/new_four_video_20261015/manual_review/` 内
+`a3d72_raw_frame_000059_raw.jpg`、`a8d940_frame_000059_raw.jpg`，圈出可见实体鱼并注明反射或遮挡。
+同目录 overlay 图仅为预测，已目视发现气泡和底部反射被编号，不能用来当作参考标签。
+EVE2/EVE3 第 30、59 帧仍保留为历史复核资料；看不清或被遮挡时直接说明，不补猜坐标或强行圈满四条。
 这属于人工视频判读；物理装置调整和重新采集仍由实验人员负责。
 
 ## 可查看的本地资料
@@ -22,8 +30,11 @@
 - `manual_review/eve3_frame_000030_raw.jpg`、`eve3_frame_000059_raw.jpg`：原尺寸 2448×2048 帧。
 - `manual_review/*_compare.jpg`：左侧面积基线、右侧三帧确认的预测，整图中的左右两栏不是两个实验视角。
   每栏各自仍保留左实体、右镜像；绿色编号仅为算法轨迹段，不是人工真值或固定物理身份。
-- `manual_review/annotation_template_confirmed_counts.csv`：22 个待反馈槽位，原视频两帧各五个，EVE2/EVE3 两帧各三个。
-  原 `annotation_template.csv` 的 30 槽版本作为历史文件保留；请使用数量修正后的版本。
+- 当前使用 `outputs/population_history_20261015/manual_review/annotation_template_population_history.csv`：26 个待反馈槽位，
+  experiment_001 两帧各五个、EVE2/EVE3 各两帧各四个；对应原图仍在上述历史目录，不复制或覆盖。
+  原 `manual_review/annotation_template_confirmed_counts.csv`（22 槽）、`annotation_template.csv`（30 槽）和
+  `outputs/population_four_20261015/manual_review/annotation_template_four_fish.csv`（24 槽）
+  保留为历史文件，均不符合当前数量记录，请勿继续使用。
   槽位数量不证明所有鱼均可见；所有行 `label_status=pending_human`，尚不是可用于准确率计算的标签。
 
 ## 圈图保存位置
@@ -45,7 +56,7 @@ data/annotations/eve3_frame_000030_marked.jpg
 
 建议 visibility 填 visible/occluded/uncertain，确认的可见鱼才填质心；
 不确定时坐标留空、notes 说明原因。只有人工实际确认后才改 label_status，
-不要把遮挡目标填成算法预测位置。若鱼数不是五条，可增删槽位并说明。
+不要把遮挡目标填成算法预测位置；按数量设置槽位不表示所有鱼在每一帧均可见。
 连续身份评价另需一段带逐帧编号的短视频标注，目前这些离散帧只支持检测层面的判读。
 
 ## 给实验人员的采集要求
